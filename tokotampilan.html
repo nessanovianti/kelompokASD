@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Toko Sederhana</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .product-img { width: 150px; height: 100px; object-fit: cover; }
+        #receipt { display: none; }
+        .receipt-container { 
+            font-family: 'Courier New', Courier, monospace; 
+            max-width: 300px; 
+            border: 1px solid #000; 
+            padding: 10px; 
+            line-height: 1.2;
+            margin: 0 auto;
+        }
+        .receipt-header { text-align: center; font-size: 14px; }
+        .receipt-line { border-top: 1px dashed #000; margin: 8px 0; }
+        .receipt-item { display: flex; justify-content: space-between; font-size: 12px; }
+        .receipt-total { font-weight: bold; font-size: 14px; }
+        @media print {
+            body, body * { visibility: hidden; }
+            #receipt, #receipt * { visibility: visible; display: block !important; }
+            #receipt { 
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+            }
+            .receipt-container {
+                border: none;
+                box-shadow: none;
+                margin: 0;
+                padding: 10px;
+                width: 100%;
+                max-width: 300px;
+            }
+            @page { margin: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto">
+            <h1 class="text-2xl font-bold text-center">Aplikasi Toko Sederhana</h1>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6">
+        <!-- Form Tambah Produk -->
+        <section class="mb-6 p-6 bg-white rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Tambah Produk Baru</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nama Produk</label>
+                    <input type="text" id="newProductName" placeholder="Nama Produk" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Harga Produk</label>
+                    <input type="number" id="newProductPrice" placeholder="Harga Produk" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Stok Produk</label>
+                    <input type="number" id="newProductStock" placeholder="Stok Produk" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Foto Produk</label>
+                    <input type="file" id="newProductImage" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <img id="imagePreview" class="mt-2 w-24 h-24 object-cover rounded-md hidden" alt="Pratinjau">
+                </div>
+            </div>
+            <button onclick="addProduct()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">Tambah Produk</button>
+        </section>
+
+        <!-- Daftar Produk -->
+        <section>
+            <h2 class="text-xl font-semibold mb-4">Daftar Produk</h2>
+            <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <p id="noProducts" class="text-gray-500 text-center col-span-full" style="display: none;">Belum ada produk yang ditambahkan.</p>
+            </div>
+        </section>
+
+        <!-- Tombol Hitung dan Refresh -->
+        <section class="mt-6 text-center">
+            <button onclick="calculateTotal()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">Cetak Struk</button>
+            <button onclick="refreshPage()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition">Refresh</button>
+        </section>
+
+        <!-- Struk -->
+        <section id="receipt" class="mt-6 mx-auto">
+            <div class="receipt-container">
+                <div class="receipt-header">
+                    <h2 class="font-bold">Toko Oleh - Oleh Arjuna</h2>
+                    <p>Jl. Ir Soekarno No.177,Blitar</p>
+                    <p>Telp: (021) 123-4567</p>
+                    <p>Tanggal: <span id="receiptDate"></span></p>
+                </div>
+                <div class="receipt-line"></div>
+                <div id="receiptDetails" class="space-y-1"></div>
+                <div class="receipt-line"></div>
+                <div class="receipt-total">
+                    <div class="receipt-item">
+                        <span>Total</span>
+                        <span id="total"></span>
+                    </div>
+                    <div class="receipt-item">
+                        <span>Diskon (10% untuk ≥ Rp 100,000)</span>
+                        <span id="discount"></span>
+                    </div>
+                    <div class="receipt-item">
+                        <span>Total Akhir</span>
+                        <span id="finalTotal"></span>
+                    </div>
+                </div>
+                <div class="receipt-line"></div>
+                <div class="receipt-header">
+                    <p>Terima Kasih Telah Berbelanja!</p>
+                    <p>Barang yang sudah dibeli tidak dapat ditukar/dikembalikan</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let products = [];
+
+        // Pratinjau gambar
+        $('#newProductImage').change(function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#imagePreview').attr('src', e.target.result).removeClass('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function renderProducts() {
+            const productList = $('#productList');
+            productList.empty();
+            if (products.length === 0) {
+                $('#noProducts').show();
+                return;
+            }
+            $('#noProducts').hide();
+            products.sort((a, b) => a.price - b.price);
+            products.forEach(product => {
+                const div = $('<div>').addClass('bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition');
+                div.html(`
+                    <img src="${product.image}" alt="${product.name}" class="product-img mx-auto mb-2 rounded-md">
+                    <h2 class="text-lg font-semibold">${product.name}</h2>
+                    <p class="text-gray-600">Harga: Rp ${product.price}</p>
+                    <p class="text-gray-600">Stok: ${product.stock}</p>
+                    <input type="number" min="0" max="${product.stock}" value="${product.quantity}" class="quantity w-full p-2 border rounded mt-2" onchange="updateQuantity(${product.id}, this.value)" placeholder="Jumlah">
+                `);
+                productList.append(div);
+            });
+        }
+
+        function addProduct() {
+            const name = $('#newProductName').val();
+            const price = parseInt($('#newProductPrice').val());
+            const stock = parseInt($('#newProductStock').val());
+            const imageFile = $('#newProductImage')[0].files[0];
+            let imageUrl = "https://via.placeholder.com/150x100";
+
+            if (name && price && !isNaN(price) && stock >= 0 && !isNaN(stock)) {
+                if (imageFile) {
+                    imageUrl = URL.createObjectURL(imageFile);
+                }
+                const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+                products.push({ id: newId, name, price, stock, quantity: 0, image: imageUrl });
+                $('#newProductName').val('');
+                $('#newProductPrice').val('');
+                $('#newProductStock').val('');
+                $('#newProductImage').val('');
+                $('#imagePreview').addClass('hidden');
+                renderProducts();
+            } else {
+                alert('Masukkan nama, harga, dan stok yang valid!');
+            }
+        }
+
+        function updateQuantity(id, value) {
+            const product = products.find(p => p.id === id);
+            const quantity = parseInt(value) || 0;
+            if (product) {
+                if (quantity > product.stock) {
+                    alert(`Jumlah melebihi stok! Stok tersedia: ${product.stock}`);
+                    product.quantity = product.stock;
+                    $(`input[onchange="updateQuantity(${id}, this.value)"]`).val(product.stock);
+                } else {
+                    product.quantity = quantity;
+                }
+            }
+        }
+
+        function calculateTotal() {
+            let total = 0;
+            let receiptDetails = '';
+            let valid = true;
+            products.forEach(product => {
+                if (product.quantity > product.stock) {
+                    valid = false;
+                    alert(`Jumlah ${product.name} melebihi stok! Stok tersedia: ${product.stock}`);
+                    return;
+                }
+                if (product.quantity > 0) {
+                    const subtotal = product.price * product.quantity;
+                    receiptDetails += `<div class="receipt-item"><span>${product.name} (${product.quantity}x, Stok: ${product.stock})</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>`;
+                    total += subtotal;
+                }
+            });
+
+            if (!valid) return;
+
+            const discount = total >= 100000 ? total * 0.1 : 0;
+            const finalTotal = total - discount;
+
+            const today = new Date().toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            $('#receiptDate').text(today);
+            $('#receiptDetails').html(receiptDetails);
+            $('#total').text(`Rp ${total.toLocaleString('id-ID')}`);
+            $('#discount').text(`Rp ${Math.round(discount).toLocaleString('id-ID')}`);
+            $('#finalTotal').text(`Rp ${Math.round(finalTotal).toLocaleString('id-ID')}`);
+            $('#receipt').show();
+
+            window.print();
+        }
+
+        function refreshPage() {
+            products.forEach(p => p.quantity = 0);
+            $('.quantity').val('0');
+            $('#receipt').hide();
+            $('#receiptDetails').empty();
+            $('#total').empty();
+            $('#discount').empty();
+            $('#finalTotal').empty();
+            renderProducts();
+        }
+
+        renderProducts();
+    </script>
+</body>
+</html>
