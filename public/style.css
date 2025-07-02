@@ -1,0 +1,30 @@
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.input-section, .list-section {
+    width: 100%;
+    max-width: 800px;
+}
+
+#appHeader {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 15px; 
+    overflow: hidden; 
+}
+
+
+#message {
+    text-align: center;
+    margin-top: 10px;
+    color: #dc3545;
+}
+
+
+#loginSection .card {
+    margin-top: 50px;
+}
